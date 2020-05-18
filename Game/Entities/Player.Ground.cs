@@ -1,0 +1,163 @@
+﻿using RotMG.Common;
+using RotMG.Networking;
+using RotMG.Utils;
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace RotMG.Game.Entities
+{
+    public partial class Player
+    {
+        private const float MoveSpeedThreshold = 1.1f;
+
+        public float MoveMultiplier = 1f;
+        public int MoveTime;
+        public int AwaitingMoves;
+        public Queue<int> AwaitingGoto;
+        public int TickId;
+        public float PushX;
+        public float PushY;
+
+        public bool ValidMove(int time, Position pos)
+        {
+            int diff = time - MoveTime;
+            float speed = (GetMovementSpeed() * diff) * MoveSpeedThreshold;
+            Position pushedServer = new Position(Position.X - (diff * PushX), Position.Y - (diff * PushY));
+            if (pos.Distance(pushedServer) > speed && pos.Distance(Position) > speed)
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "Move stuffs... DIST/SPD = " + pos.Distance(pushedServer) + " : " + speed);
+#endif
+                return false;
+            }
+            return true;
+        }
+
+        public void TryMove(int time, Position pos)
+        {
+            if (!ValidTime(time))
+            {
+                Client.Disconnect();
+                return;
+            }
+
+            if (AwaitingGoto.Count > 0)
+            {
+                foreach (int gt in AwaitingGoto)
+                {
+                    if (gt + TimeUntilAckTimeout < time)
+                    {
+                        Program.Print(PrintType.Error, "Goto ack timed out");
+                        Client.Disconnect();
+                        return;
+                    }
+                }
+#if DEBUG
+                Program.Print(PrintType.Error, "Waiting for goto ack...");
+#endif
+                return;
+            }
+
+            if (!ValidMove(time, pos))
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "Invalid move");
+#endif
+                Client.Disconnect();
+                return;
+            }
+
+            if (TileFullOccupied(pos.X, pos.Y))
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "Tile occupied");
+#endif
+                Client.Disconnect();
+                return;
+            }
+
+            AwaitingMoves--;
+            if (AwaitingMoves < 0)
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "Too many move packets");
+#endif
+                Client.Disconnect();
+                return;
+            }
+
+            Tile tile = Parent.Tiles[(int)pos.X, (int)pos.Y];
+            TileDesc desc = Resources.Type2Tile[tile.Type];
+            if (desc.Damage > 0 && !HasConditionEffect(ConditionEffectIndex.Invincible))
+            {
+                if (!(tile.StaticObject?.Desc.ProtectFromGroundDamage ?? false) && Damage(desc.Id, desc.Damage, new ConditionEffectDesc[0], true))
+                    return;
+            }
+
+            Parent.MoveEntity(this, pos);
+            if (CheckProjectiles(time))
+                return;
+
+            if (desc.Push)
+            {
+                PushX = desc.DX;
+                PushY = desc.DY;
+            }
+            else
+            {
+                PushX = 0;
+                PushY = 0;
+            }
+
+            MoveMultiplier = GetMoveMultiplier();
+            MoveTime = time;
+        }
+
+        public void TryGotoAck(int time)
+        {
+            if (!ValidTime(time))
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "GotoAck invalid time");
+#endif
+                Client.Disconnect();
+                return;
+            }
+
+            if (!AwaitingGoto.TryDequeue(out int t))
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "No GotoAck to ack");
+#endif
+                Client.Disconnect();
+                return;
+            }
+        }
+
+        public bool Teleport(int time, Position pos)
+        {
+            if (!RegionUnblocked(pos.X, pos.Y))
+                return false;
+
+            Tile tile = Parent.GetTileF((int)pos.X, (int)pos.Y);
+            if (tile == null || TileUpdates[(int)pos.X, (int)pos.Y] != tile.UpdateCount)
+                return false;
+
+            Parent.MoveEntity(this, pos);
+            AwaitingGoto.Enqueue(time);
+
+            byte[] eff = GameServer.ShowEffect(ShowEffectIndex.Teleport, Id, 0xFFFFFFFF, pos);
+            byte[] go = GameServer.Goto(Id, pos);
+
+            foreach (Player player in Parent.Players.Values)
+            {
+                if (player.Client.Account.Effects)
+                    player.Client.Send(eff);
+                player.Client.Send(go);
+            }
+            return true;
+        }
+    }
+}

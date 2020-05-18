@@ -1,0 +1,13 @@
+﻿<Worlds>
+	<World id="Dreamland">
+		<Maps></Maps>
+		<BlockSight>2</BlockSight>
+	</World>
+	<World id="Nexus" display="Nexus">
+		<Maps>Nexus/0.jm</Maps>
+		<Background>0</Background>
+		<AllowTeleport>true</AllowTeleport>
+		<ShowDisplays>true</ShowDisplays>
+		<BlockSight>0</BlockSight>
+	</World>
+</Worlds>
