@@ -69,6 +69,9 @@ namespace RotMG.Game.Entities
 
         public float GetMovementSpeed()
         {
+            if (HasConditionEffect(ConditionEffectIndex.Paralyzed))
+                return 0;
+
             if (HasConditionEffect(ConditionEffectIndex.Slowed))
                 return MinMoveSpeed * MoveMultiplier;
 
