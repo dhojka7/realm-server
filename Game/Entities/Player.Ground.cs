@@ -11,24 +11,45 @@ namespace RotMG.Game.Entities
     public partial class Player
     {
         private const float MoveSpeedThreshold = 1.1f;
+        private const int SpeedHistoryCount = 10; //in world ticks (10 = 1 sec history), the lower the count, the stricter the detection
 
         public float MoveMultiplier = 1f;
         public int MoveTime;
         public int AwaitingMoves;
         public Queue<int> AwaitingGoto;
+        public List<float> SpeedHistory;
         public int TickId;
         public float PushX;
         public float PushY;
 
+        public void PushSpeedToHistory(float speed)
+        {
+            SpeedHistory.Add(speed);
+            if (SpeedHistory.Count > SpeedHistoryCount)
+                SpeedHistory.RemoveAt(0); //Remove oldest entry
+        }
+
+        public float GetHighestSpeedHistory()
+        {
+            float ret = 0f;
+            for (int i = 0; i < SpeedHistoryCount; i++)
+            {
+                if (SpeedHistory[i] > ret)
+                    ret = SpeedHistory[i];
+            }
+            return ret;
+        }
+
         public bool ValidMove(int time, Position pos)
         {
             int diff = time - MoveTime;
-            float speed = (GetMovementSpeed() * diff) * MoveSpeedThreshold;
+            float movementSpeed = Math.Max(GetMovementSpeed(), GetHighestSpeedHistory());
+            float distanceTraveled = (movementSpeed * diff) * MoveSpeedThreshold;
             Position pushedServer = new Position(Position.X - (diff * PushX), Position.Y - (diff * PushY));
-            if (pos.Distance(pushedServer) > speed && pos.Distance(Position) > speed)
+            if (pos.Distance(pushedServer) > distanceTraveled && pos.Distance(Position) > distanceTraveled)
             {
 #if DEBUG
-                Program.Print(PrintType.Error, "Move stuffs... DIST/SPD = " + pos.Distance(pushedServer) + " : " + speed);
+                Program.Print(PrintType.Error, "Move stuffs... DIST/SPD = " + pos.Distance(pushedServer) + " : " + distanceTraveled);
 #endif
                 return false;
             }
@@ -113,6 +134,8 @@ namespace RotMG.Game.Entities
 
             MoveMultiplier = GetMoveMultiplier();
             MoveTime = time;
+
+            PushSpeedToHistory(GetMovementSpeed()); //Add a new entry
         }
 
         public void TryGotoAck(int time)
