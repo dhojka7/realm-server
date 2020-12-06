@@ -182,7 +182,7 @@ namespace RotMG.Networking
                         _socket.Receive(_receive.PacketBytes, GameServer.PrefixLength, SocketFlags.None);
                         _receive.PacketLength = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(_receive.PacketBytes, 0));
                         _receive.State = SocketEventState.InProgress;
-                        //StartReceive();
+                        StartReceive();
                     }
                     break;
                 case SocketEventState.InProgress:
@@ -206,6 +206,8 @@ namespace RotMG.Networking
                         GameServer.Read(this, _receive.GetPacketId(), _receive.GetPacketBody());
                         _receive.Reset();
                     }
+
+                    StartReceive();
                     break;
             }
         }
@@ -220,7 +222,7 @@ namespace RotMG.Networking
                         _send.PacketBytes = packet;
                         _send.PacketLength = packet.Length;
                         _send.State = SocketEventState.InProgress;
-                        //StartSend();
+                        StartSend();
                     }
                     break;
                 case SocketEventState.InProgress:
@@ -229,8 +231,9 @@ namespace RotMG.Networking
                     int written = _socket.Send(_send.Data, _send.BytesWritten, _send.PacketLength + GameServer.PrefixLengthWithId - _send.BytesWritten, SocketFlags.None);
                     if (written < _send.PacketLength + GameServer.PrefixLengthWithId)
                         _send.BytesWritten += written;
-                    else 
+                    else
                         _send.Reset();
+                    StartSend();
                     break;
             }
         }
