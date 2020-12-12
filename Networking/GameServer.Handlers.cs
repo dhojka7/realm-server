@@ -349,7 +349,7 @@ namespace RotMG.Networking
             if (client.State == ProtocolState.Awaiting)
             {
                 CharacterModel character = Database.LoadCharacter(client.Account, charId);
-                if (character.IsNull || character.Dead)
+                if (character.IsNull || character.Dead || character.Deleted)
                 {
                     client.Send(Failure(0, "Failed to load character."));
                     client.Disconnect();

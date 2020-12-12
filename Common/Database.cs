@@ -851,7 +851,8 @@ namespace RotMG.Common
                     return null;
             }
 
-            int newId = acc.NextCharId += 1;
+            int newId = acc.NextCharId;
+            acc.NextCharId++;
             acc.AliveChars.Add(newId);
             acc.Save();
 
