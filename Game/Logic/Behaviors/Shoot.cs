@@ -89,7 +89,7 @@ namespace RotMG.Game.Logic.Behaviors
                             Position history = target.TryGetHistory(1);
                             float targetX = target.Position.X + PredictNumTicks * (target.Position.X - history.X);
                             float targetY = target.Position.Y + PredictNumTicks * (target.Position.Y - history.Y);
-                            angle = (float)Math.Atan2(targetY - host.Position.Y, targetY - host.Position.Y);
+                            angle = (float)Math.Atan2(targetY - host.Position.Y, targetX - host.Position.X);
                         }
                         else
                             angle = (float)Math.Atan2(target.Position.Y - host.Position.Y, target.Position.X - host.Position.X);

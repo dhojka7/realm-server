@@ -27,6 +27,12 @@ namespace RotMG.Game.Logic.Database
 
             db.Init("Beer God",
                 new Wander(2));
+
+            //Multi init
+            db.Init(new string[] { "Flying Brain", "White Demon", "Pirate" },
+                new IfId("Pirate", //Only pirate will shoot the nade out of those 3 ^ 
+                    new Grenade(5, 50, 10)),
+                new Wander(5));
         }
     }
 }

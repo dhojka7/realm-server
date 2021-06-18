@@ -81,6 +81,16 @@ namespace RotMG.Game.Logic
             Models[type] = new BehaviorModel(behaviors);
         }
 
+        public void Init(string[] ids, params IBehavior[] behaviors)
+        {
+#if DEBUG
+            if (ids == null || ids.Length == 0)
+                throw new Exception("pls");
+#endif
+            foreach (var id in ids)
+                Init(id, behaviors);
+        }
+
         public BehaviorModel Resolve(ushort type)
         {
             if (Models.TryGetValue((int)type, out BehaviorModel model))
