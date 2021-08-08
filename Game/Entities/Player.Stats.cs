@@ -67,26 +67,26 @@ namespace RotMG.Game.Entities
             return Stats[index] + Boosts[index];
         }
 
-        public float GetMovementSpeed(float multiplier)
+        public float GetMovementSpeed()
         {
             if (HasConditionEffect(ConditionEffectIndex.Paralyzed))
                 return 0;
 
             if (HasConditionEffect(ConditionEffectIndex.Slowed))
-                return MinMoveSpeed * multiplier;
+                return MinMoveSpeed * MoveMultiplier;
 
             float ret = MinMoveSpeed + GetStat(4) / 75f * (MaxMoveSpeed - MinMoveSpeed);
             if (HasConditionEffect(ConditionEffectIndex.Speedy))
             {
                 ret = ret * 1.5f;
             }
-            ret = ret * multiplier;
+            ret = ret * MoveMultiplier;
             return ret;
         }
 
-        public float GetMoveMultiplier(Position pos)
+        public float GetMoveMultiplier()
         {
-            Tile tile = Parent.Tiles[(int)pos.X, (int)pos.Y];
+            Tile tile = Parent.Tiles[(int)Position.X, (int)Position.Y];
             TileDesc desc = Resources.Type2Tile[tile.Type];
 
             if (desc.Sinking)

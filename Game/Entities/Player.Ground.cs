@@ -3,7 +3,6 @@ using RotMG.Networking;
 using RotMG.Utils;
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,6 +13,7 @@ namespace RotMG.Game.Entities
         private const float MoveSpeedThreshold = 1.1f;
         private const int SpeedHistoryCount = 10; //in world ticks (10 = 1 sec history), the lower the count, the stricter the detection
 
+        public float MoveMultiplier = 1f;
         public int MoveTime;
         public int AwaitingMoves;
         public Queue<int> AwaitingGoto;
@@ -40,10 +40,10 @@ namespace RotMG.Game.Entities
             return ret;
         }
 
-        public bool ValidMove(int time, Position pos, float speed)
+        public bool ValidMove(int time, Position pos)
         {
             int diff = time - MoveTime;
-            float movementSpeed = Math.Max(speed, GetHighestSpeedHistory());
+            float movementSpeed = Math.Max(GetMovementSpeed(), GetHighestSpeedHistory());
             float distanceTraveled = (movementSpeed * diff) * MoveSpeedThreshold;
             Position pushedServer = new Position(Position.X - (diff * PushX), Position.Y - (diff * PushY));
             if (pos.Distance(pushedServer) > distanceTraveled && pos.Distance(Position) > distanceTraveled)
@@ -80,22 +80,8 @@ namespace RotMG.Game.Entities
 #endif
                 return;
             }
-            
-            if (TileFullOccupied(pos.X, pos.Y))
-            {
-#if DEBUG
-                Program.Print(PrintType.Error, "Tile occupied");
-#endif
-                Client.Disconnect();
-                return;
-            }
 
-            float serverMultiplier = GetMoveMultiplier(Position);
-            float clientMultiplier = GetMoveMultiplier(pos);
-            float multiplier = MathF.Max(serverMultiplier, clientMultiplier);
-            float movementSpeed = GetMovementSpeed(multiplier);
-
-            if (!ValidMove(time, pos, movementSpeed))
+            if (!ValidMove(time, pos))
             {
 #if DEBUG
                 Program.Print(PrintType.Error, "Invalid move");
@@ -104,7 +90,14 @@ namespace RotMG.Game.Entities
                 return;
             }
 
-
+            if (TileFullOccupied(pos.X, pos.Y))
+            {
+#if DEBUG
+                Program.Print(PrintType.Error, "Tile occupied");
+#endif
+                Client.Disconnect();
+                return;
+            }
 
             AwaitingMoves--;
             if (AwaitingMoves < 0)
@@ -139,9 +132,10 @@ namespace RotMG.Game.Entities
                 PushY = 0;
             }
 
+            MoveMultiplier = GetMoveMultiplier();
             MoveTime = time;
 
-            PushSpeedToHistory(movementSpeed); //Add a new entry
+            PushSpeedToHistory(GetMovementSpeed()); //Add a new entry
         }
 
         public void TryGotoAck(int time)
