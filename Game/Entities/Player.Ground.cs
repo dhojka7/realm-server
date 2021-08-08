@@ -18,38 +18,44 @@ namespace RotMG.Game.Entities
         public int AwaitingMoves;
         public Queue<int> AwaitingGoto;
         public List<float> SpeedHistory;
+        public List<float> MultiplierHistory;
         public int TickId;
         public float PushX;
         public float PushY;
 
-        public void PushSpeedToHistory(float speed)
+        public void PushSpeedToHistory(float speed, float mult)
         {
             SpeedHistory.Add(speed);
+            MultiplierHistory.Add(mult);
             if (SpeedHistory.Count > SpeedHistoryCount)
+            {
                 SpeedHistory.RemoveAt(0); //Remove oldest entry
+                MultiplierHistory.RemoveAt(0);
+            }
         }
 
-        public float GetHighestSpeedHistory()
+        public Tuple<float, float> GetHighestSpeedHistory()
         {
-            float ret = 0f;
+            float speed = 0f;
+            float mult = 0f;
             for (int i = 0; i < SpeedHistoryCount; i++)
             {
-                if (SpeedHistory[i] > ret)
-                    ret = SpeedHistory[i];
+                if (SpeedHistory[i] > speed) speed = SpeedHistory[i];
+                if (MultiplierHistory[i] > mult) mult = MultiplierHistory[i];
             }
-            return ret;
+            return Tuple.Create(speed, mult);
         }
 
         public bool ValidMove(int time, Position pos)
         {
             int diff = time - MoveTime;
-            float movementSpeed = Math.Max(GetMovementSpeed(), GetHighestSpeedHistory());
-            float distanceTraveled = (movementSpeed * diff) * MoveSpeedThreshold;
-            Position pushedServer = new Position(Position.X - (diff * PushX), Position.Y - (diff * PushY));
-            if (pos.Distance(pushedServer) > distanceTraveled && pos.Distance(Position) > distanceTraveled)
+            Tuple<float, float> history = GetHighestSpeedHistory();
+            float maxDistance = ((history.Item1 * history.Item2) * diff) * MoveSpeedThreshold;
+            Position pushedServerPosition = new Position(Position.X - (diff * PushX), Position.Y - (diff * PushY));
+            if (pos.Distance(pushedServerPosition) > maxDistance && pos.Distance(Position) > maxDistance)
             {
 #if DEBUG
-                Program.Print(PrintType.Error, "Move stuffs... DIST/SPD = " + pos.Distance(pushedServer) + " : " + distanceTraveled);
+                Program.Print(PrintType.Error, "Move stuffs... DIST/SPD = " + pos.Distance(pushedServerPosition) + " : " + maxDistance);
 #endif
                 return false;
             }
@@ -135,7 +141,7 @@ namespace RotMG.Game.Entities
             MoveMultiplier = GetMoveMultiplier();
             MoveTime = time;
 
-            PushSpeedToHistory(GetMovementSpeed()); //Add a new entry
+            PushSpeedToHistory(GetMovementSpeed(), MoveMultiplier); //Add a new entry
         }
 
         public void TryGotoAck(int time)

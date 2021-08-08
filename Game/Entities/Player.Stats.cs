@@ -73,14 +73,13 @@ namespace RotMG.Game.Entities
                 return 0;
 
             if (HasConditionEffect(ConditionEffectIndex.Slowed))
-                return MinMoveSpeed * MoveMultiplier;
+                return MinMoveSpeed;
 
             float ret = MinMoveSpeed + GetStat(4) / 75f * (MaxMoveSpeed - MinMoveSpeed);
             if (HasConditionEffect(ConditionEffectIndex.Speedy))
             {
                 ret = ret * 1.5f;
             }
-            ret = ret * MoveMultiplier;
             return ret;
         }
 

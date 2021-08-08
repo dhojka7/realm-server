@@ -252,8 +252,9 @@ namespace RotMG.Game.Entities
             AwaitingGoto = new Queue<int>();
 
             SpeedHistory = new List<float>(SpeedHistoryCount);
+            MultiplierHistory = new List<float>(MultiplierHistory);
             for (int i = 0; i < SpeedHistoryCount; i++) //Just make some temporary history when player is first initialized
-                PushSpeedToHistory(GetMovementSpeed() * 1.5f);
+                PushSpeedToHistory(GetMovementSpeed() * 1.5f, 1f);
 
             Client.Send(GameServer.AccountList(0, Client.Account.LockedIds));
             Client.Send(GameServer.AccountList(1, Client.Account.IgnoredIds));
@@ -468,6 +469,7 @@ namespace RotMG.Game.Entities
             AwaitingGoto.Clear();
             PrivateSVs.Clear();
             SpeedHistory.Clear();
+            MultiplierHistory.Clear();
             base.Dispose();
         }
     }
