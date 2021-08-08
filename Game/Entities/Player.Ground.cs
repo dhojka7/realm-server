@@ -13,8 +13,7 @@ namespace RotMG.Game.Entities
         private const float MoveSpeedThreshold = 1.1f;
         private const int SpeedHistoryCount = 10; //in world ticks (10 = 1 sec history), the lower the count, the stricter the detection
 
-        public float ClientMoveMulitplier = 1f;
-        public float ServerMoveMultiplier = 1f;
+        public float MoveMultiplier = 1f;
         public int MoveTime;
         public int AwaitingMoves;
         public Queue<int> AwaitingGoto;
@@ -82,20 +81,19 @@ namespace RotMG.Game.Entities
                 return;
             }
 
-            if (TileFullOccupied(pos.X, pos.Y))
+            if (!ValidMove(time, pos))
             {
 #if DEBUG
-                Program.Print(PrintType.Error, "Tile occupied");
+                Program.Print(PrintType.Error, "Invalid move");
 #endif
                 Client.Disconnect();
                 return;
             }
 
-            ClientMoveMulitplier = GetMoveMultiplier(pos);
-            if (!ValidMove(time, pos))
+            if (TileFullOccupied(pos.X, pos.Y))
             {
 #if DEBUG
-                Program.Print(PrintType.Error, "Invalid move");
+                Program.Print(PrintType.Error, "Tile occupied");
 #endif
                 Client.Disconnect();
                 return;
@@ -134,7 +132,7 @@ namespace RotMG.Game.Entities
                 PushY = 0;
             }
 
-            ServerMoveMultiplier = GetMoveMultiplier(Position);
+            MoveMultiplier = GetMoveMultiplier();
             MoveTime = time;
 
             PushSpeedToHistory(GetMovementSpeed()); //Add a new entry
