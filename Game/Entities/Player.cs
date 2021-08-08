@@ -252,7 +252,7 @@ namespace RotMG.Game.Entities
             AwaitingGoto = new Queue<int>();
 
             SpeedHistory = new List<float>(SpeedHistoryCount);
-            MultiplierHistory = new List<float>(MultiplierHistory);
+            MultiplierHistory = new List<float>(SpeedHistoryCount);
             for (int i = 0; i < SpeedHistoryCount; i++) //Just make some temporary history when player is first initialized
                 PushSpeedToHistory(GetMovementSpeed() * 1.5f, 1f);
 
